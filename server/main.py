@@ -16,6 +16,8 @@ from pathlib import Path
 from .data_storage import DataStorage
 from .data_validation import DataValidator
 from .models.sensor_data import SensorData, SignGestureData
+from .professor_proxy import professor_proxy
+from .ksl_classes import ksl_manager, KSLCategory
 
 # 로깅 설정
 logging.basicConfig(
@@ -98,6 +100,12 @@ async def collect_sensor_data(
             sensor_data
         )
         
+        # 교수님 서버로 데이터 전송 (백그라운드)
+        background_tasks.add_task(
+            professor_proxy.send_sensor_data,
+            sensor_data
+        )
+        
         logger.info(f"센서 데이터 수집 완료: {sensor_data.device_id}")
         
         return DataResponse(
@@ -138,6 +146,12 @@ async def collect_gesture_data(
             gesture_data
         )
         
+        # 교수님 서버로 데이터 전송 (백그라운드)
+        background_tasks.add_task(
+            professor_proxy.send_gesture_data,
+            gesture_data
+        )
+        
         logger.info(f"제스처 데이터 수집 완료: {gesture_data.gesture_label}")
         
         return DataResponse(
@@ -167,13 +181,85 @@ async def get_data_stats():
             detail=f"통계 조회 실패: {str(e)}"
         )
 
+# === KSL (한국어 수어) API 엔드포인트 ===
+
+@app.get("/api/ksl/classes")
+async def get_all_ksl_classes():
+    """모든 KSL 클래스 조회"""
+    try:
+        classes = {name: cls.to_dict() for name, cls in ksl_manager.classes.items()}
+        return JSONResponse(content=classes)
+    except Exception as e:
+        logger.error(f"KSL 클래스 조회 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"KSL 클래스 조회 실패: {str(e)}")
+
+@app.get("/api/ksl/classes/{category}")
+async def get_ksl_classes_by_category(category: str):
+    """카테고리별 KSL 클래스 조회"""
+    try:
+        # 문자열을 KSLCategory enum으로 변환
+        category_enum = KSLCategory(category.lower())
+        classes = ksl_manager.get_classes_by_category(category_enum)
+        result = [cls.to_dict() for cls in classes]
+        return JSONResponse(content={"category": category, "classes": result})
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"유효하지 않은 카테고리: {category}")
+    except Exception as e:
+        logger.error(f"카테고리별 KSL 클래스 조회 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ksl/classes/name/{class_name}")
+async def get_ksl_class(class_name: str):
+    """특정 KSL 클래스 상세 조회"""
+    try:
+        ksl_class = ksl_manager.get_class(class_name)
+        if not ksl_class:
+            raise HTTPException(status_code=404, detail=f"KSL 클래스 '{class_name}' 찾을 수 없음")
+        return JSONResponse(content=ksl_class.to_dict())
+    except Exception as e:
+        logger.error(f"KSL 클래스 상세 조회 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ksl/statistics")
+async def get_ksl_statistics():
+    """KSL 클래스 통계 정보"""
+    try:
+        stats = ksl_manager.get_statistics()
+        return JSONResponse(content=stats)
+    except Exception as e:
+        logger.error(f"KSL 통계 조회 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/ksl/validated")
+async def get_validated_ksl_classes():
+    """검증된 KSL 클래스만 조회"""
+    try:
+        classes = ksl_manager.get_validated_classes()
+        result = [cls.to_dict() for cls in classes]
+        return JSONResponse(content={"validated_classes": result, "count": len(result)})
+    except Exception as e:
+        logger.error(f"검증된 KSL 클래스 조회 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/professor/status")
+async def get_professor_server_status():
+    """교수님 서버 연결 상태 확인"""
+    try:
+        status = await professor_proxy.get_server_status()
+        return JSONResponse(content=status)
+    except Exception as e:
+        logger.error(f"교수님 서버 상태 확인 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/health")
 async def health_check():
     """서버 헬스 체크"""
     return {
         "status": "healthy",
         "timestamp": datetime.now(),
-        "service": "SignGlove Data Collection Server"
+        "service": "SignGlove Data Collection Server",
+        "professor_proxy_enabled": professor_proxy.enabled,
+        "ksl_classes_loaded": len(ksl_manager.classes)
     }
 
 @app.on_event("startup")
