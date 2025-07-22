@@ -197,7 +197,10 @@ void performSensorFusion() {
 }
 
 void calculateOrientationAndConfidence() {
-  // === 논문 기반 개선된 방향 판단 ===
+  // === 양동건님 개선 알고리즘 + 논문 기반 방향 판단 ===
+  
+  const float THRESHOLD = 0.6;  // 양동건님 설정 임계값
+  const int NUM_SAMPLES = 10;   // 평균 필터 샘플 수
   
   // 1. 가속도 벡터 크기 계산
   float accel_magnitude = sqrt(
@@ -221,7 +224,7 @@ void calculateOrientationAndConfidence() {
                           abs(current_data.gyro_z);
   bool is_moving = motion_intensity > 30.0;  // 30 dps 임계값
   
-  // 5. 방향 판단 (쿼터니언 기반 - Gimbal Lock 방지)
+  // 5. 양동건님 개선된 방향 판단 (6축 활용)
   if (is_moving) {
     // 움직임 중: 자이로스코프 기반 판단
     if (abs(current_data.gyro_z) > 50) {
@@ -232,18 +235,22 @@ void calculateOrientationAndConfidence() {
       current_data.confidence *= 0.5;
     }
   } else {
-    // 정적 상태: 가속도 기반 정확한 방향 판단
-    if (norm_az < -0.8) {
+    // 정적 상태: 개선된 6축 방향 판단
+    if (norm_az < -THRESHOLD) {
       current_data.direction = "손바닥이 위 (하늘)";
-    } else if (norm_az > 0.8) {
+    } else if (norm_az > THRESHOLD) {
       current_data.direction = "손바닥이 아래 (땅)";
-    } else if (norm_ay < -0.8) {
+    } else if (norm_ay < -THRESHOLD) {
       current_data.direction = "손바닥이 앞 (사람 방향)";
-    } else if (norm_ay > 0.8) {
+    } else if (norm_ay > THRESHOLD) {
       current_data.direction = "손바닥이 뒤 (자기 쪽)";
+    } else if (norm_ax < -THRESHOLD) {
+      current_data.direction = "손이 오른쪽으로 기울어짐";
+    } else if (norm_ax > THRESHOLD) {
+      current_data.direction = "손이 왼쪽으로 기울어짐";
     } else {
-      current_data.direction = "중립 위치";
-      current_data.confidence *= 0.6;
+      current_data.direction = "방향 모호함";  // 양동건님 케이스 추가
+      current_data.confidence *= 0.4;  // 모호함 시 신뢰도 대폭 감소
     }
   }
   
