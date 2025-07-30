@@ -1,0 +1,7 @@
+{
+  "timestamp": "20250726_210328",
+  "total_samples": 300,
+  "total_classes": 3,
+  "class_distribution": {
+    "ㄱ": 100,
+    "ㅏ": 100

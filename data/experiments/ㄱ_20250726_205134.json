@@ -1,0 +1,17 @@
+{
+  "experiment_info": {
+    "label": "ㄱ",
+    "duration": 60,
+    "sampling_hz": 20,
+    "filename": "ㄱ_20250726_205134",
+    "save_mode": "overwrite",
+    "timestamp": "2025-07-26T20:52:47.171300"
+  },
+  "results": {
+    "total_samples": 1181,
+    "actual_hz": 19.683333333333334,
+    "efficiency": 98.41666666666666,
+    "first_sample": "2025-07-26T20:51:47.211091",
+    "last_sample": "2025-07-26T20:52:47.136708"
+  }
+}
