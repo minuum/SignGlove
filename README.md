@@ -34,14 +34,25 @@
 ## 프로젝트 구조
 ```
 SignGlove/
-├── pyproject.toml            # Poetry 프로젝트 설정
-├── .cursorrules              # 개발 가이드라인
+├── pyproject.toml            # Poetry 프로젝트 설정 (양동건 스크립트 포함)
+├── setup.py                  # 🆕 통합 환경 설정 스크립트
+├── QUICKSTART.md             # 🆕 빠른 시작 가이드
 ├── PROJECT_PLAN.md           # 프로젝트 계획서
 ├── README.md                 # 프로젝트 설명서
+├── scripts/                  # 🆕 환경 설정 스크립트
+│   ├── setup_windows.bat     # Windows 환경 설정
+│   ├── setup_macos.sh        # macOS 환경 설정
+│   ├── setup_ubuntu.sh       # Ubuntu/Linux 환경 설정
+│   └── setup_environment.py  # Python 범용 설정
 ├── hardware/                 # 하드웨어 관련 파일
-│   ├── arduino/              # 아두이노 코드
+│   ├── arduino/              # 기존 아두이노 코드
+│   ├── donggeon/             # 🆕 양동건 팀원 코드
+│   │   ├── arduino/          # Arduino 펌웨어 (WiFi/UART)
+│   │   ├── client/           # Python 클라이언트 코드
+│   │   ├── server/           # TCP 서버 코드
+│   │   └── README.md         # 양동건 코드 사용법
 │   └── circuit_diagrams/     # 회로도
-├── server/                   # 서버 코드
+├── server/                   # 서버 코드 (이민우)
 │   ├── main.py              # FastAPI 서버
 │   ├── data_storage.py      # 데이터 저장 모듈
 │   ├── data_validation.py   # 데이터 검증 모듈
@@ -62,35 +73,41 @@ SignGlove/
 
 ## 🚀 빠른 시작
 
-### 1. Poetry 환경 설정
+### ⚡ 초고속 설정 (추천)
 ```bash
-# Poetry 설치 (이미 설치되어 있다면 생략)
-curl -sSL https://install.python-poetry.org | python3 -
-
-# 프로젝트 클론
+# 단 한 줄로 모든 환경 설정 완료!
 git clone <repository-url>
 cd SignGlove
+python setup.py
+```
 
-# 의존성 설치 및 가상환경 생성
-poetry install
+### 🖥️ 플랫폼별 설정
+```bash
+# Windows
+scripts\setup_windows.bat
 
-# 가상환경 활성화
+# macOS
+./scripts/setup_macos.sh
+
+# Ubuntu/Linux
+./scripts/setup_ubuntu.sh
+```
+
+### 🚀 실행
+```bash
+# Poetry 환경 활성화
 poetry shell
-```
 
-### 2. 전체 데모 실행 (추천)
-```bash
-# 서버 시작부터 테스트까지 자동화
+# FastAPI 서버 시작
+poetry run start-server
+
+# 양동건 팀원 하드웨어 클라이언트
+poetry run donggeon-uart        # UART 방식 (플렉스+IMU)
+poetry run donggeon-wifi        # WiFi 방식 (IMU만)
+poetry run donggeon-tcp-server  # 간단한 TCP 서버
+
+# 기존 데모 실행
 python scripts/demo.py
-```
-
-### 3. 개별 실행
-```bash
-# 서버만 시작
-python scripts/start_server.py
-
-# 다른 터미널에서 테스트 실행
-python scripts/run_tests.py
 ```
 
 ## 📋 테스트 시나리오
