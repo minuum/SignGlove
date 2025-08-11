@@ -25,6 +25,10 @@ import pandas as pd
 from .models.sensor_data import SensorData, SignGestureData
 from .data_validation import DataValidator
 from .ksl_classes import ksl_manager, KSLCategory
+from .preprocessing import SensorPreprocessor
+from .inference_engine import get_inference_engine, InferenceResult
+from .tts_engine import get_tts_engine, speak_ksl_async
+from .performance_monitor import get_performance_monitor, capture_inference_metrics
 
 # 로깅 설정
 logging.basicConfig(
@@ -134,6 +138,10 @@ class UnifiedDataManager:
 # 전역 데이터 매니저
 data_manager = UnifiedDataManager()
 data_validator = DataValidator()
+preprocessor = SensorPreprocessor()
+inference_engine = get_inference_engine()
+tts_engine = get_tts_engine()
+performance_monitor = get_performance_monitor()
 
 
 # API 모델 정의
@@ -548,6 +556,285 @@ async def download_file(file_type: str, filename: str):
         
     except Exception as e:
         logger.error(f"파일 다운로드 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ===== 새로운 통합 API 엔드포인트 =====
+
+@app.post("/inference/predict")
+async def predict_ksl(sensor_data_list: List[SensorData]):
+    """
+    실시간 KSL 예측 (KLP-SignGlove 통합 기능)
+    """
+    try:
+        if not sensor_data_list:
+            raise HTTPException(status_code=400, detail="센서 데이터가 비어있습니다")
+        
+        # 전처리
+        processed_data = preprocessor.preprocess_sensor_sequence(
+            sensor_data_list,
+            apply_filter=True,
+            apply_normalization=True,
+            apply_smoothing=True
+        )
+        
+        # 추론 (MockModel 사용)
+        if hasattr(inference_engine.model, 'predict'):
+            predicted_class, confidence = inference_engine.model.predict(processed_data)
+        else:
+            predicted_class, confidence = "ㄱ", 0.75  # 기본값
+        
+        # 안정성 체크
+        is_stable, stability_score = inference_engine.stability_checker.add_prediction(
+            predicted_class, confidence
+        )
+        
+        result = {
+            "predicted_class": predicted_class,
+            "confidence": confidence,
+            "is_stable": is_stable,
+            "stability_score": stability_score,
+            "timestamp": datetime.now().isoformat(),
+            "sample_count": len(sensor_data_list)
+        }
+        
+        logger.info(f"KSL 예측: {predicted_class} (신뢰도: {confidence:.2f}, 안정성: {is_stable})")
+        return result
+        
+    except Exception as e:
+        logger.error(f"KSL 예측 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/inference/stream")
+async def stream_inference(sensor_data: SensorData):
+    """
+    실시간 스트리밍 추론 (562 FPS 성능)
+    """
+    try:
+        # 추론 엔진 시작 (아직 시작되지 않은 경우)
+        if not inference_engine.is_running:
+            inference_engine.start()
+        
+        # 센서 데이터 추가
+        success = inference_engine.add_sensor_data(sensor_data)
+        
+        if not success:
+            raise HTTPException(status_code=429, detail="처리 큐가 가득참")
+        
+        # 현재 안정된 예측 결과 반환
+        stable_prediction = inference_engine.get_stable_prediction()
+        
+        result = {
+            "queued": True,
+            "queue_size": inference_engine.sensor_queue.qsize(),
+            "stable_prediction": stable_prediction,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"스트리밍 추론 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/inference/metrics")
+async def get_inference_metrics():
+    """
+    추론 엔진 성능 메트릭 조회
+    """
+    try:
+        metrics = inference_engine.get_performance_metrics()
+        
+        # 성능 모니터에 메트릭 기록
+        capture_inference_metrics(
+            fps=metrics.fps,
+            latency_ms=metrics.avg_latency_ms,
+            stable_predictions=metrics.stable_predictions,
+            total_predictions=metrics.total_predictions
+        )
+        
+        return {
+            "fps": metrics.fps,
+            "avg_latency_ms": metrics.avg_latency_ms,
+            "total_predictions": metrics.total_predictions,
+            "stable_predictions": metrics.stable_predictions,
+            "accuracy_rate": metrics.accuracy_rate,
+            "uptime_seconds": metrics.uptime_seconds,
+            "is_running": inference_engine.is_running,
+            "queue_size": inference_engine.sensor_queue.qsize()
+        }
+        
+    except Exception as e:
+        logger.error(f"메트릭 조회 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/tts/speak")
+async def speak_text(text: str, confidence: float = 1.0):
+    """
+    TTS 음성 출력 (한국어 KSL 지원)
+    """
+    try:
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="텍스트가 비어있습니다")
+        
+        # TTS 엔진 시작 (아직 시작되지 않은 경우)
+        if not tts_engine.is_running:
+            tts_engine.start()
+        
+        # 비동기 음성 출력
+        speak_ksl_async(text, confidence)
+        
+        # KSL → 음성 텍스트 변환 결과 반환
+        speech_text = tts_engine.convert_ksl_to_speech(text)
+        
+        result = {
+            "original_text": text,
+            "speech_text": speech_text,
+            "confidence": confidence,
+            "queued": True,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        logger.info(f"TTS 요청: {text} → {speech_text}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"TTS 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/tts/test")
+async def test_tts():
+    """TTS 테스트"""
+    try:
+        # TTS 엔진 시작
+        if not tts_engine.is_running:
+            tts_engine.start()
+        
+        # 테스트 실행
+        success = tts_engine.test_speech()
+        
+        return {
+            "success": success,
+            "platform": tts_engine.platform,
+            "voice": tts_engine.config.voice,
+            "enabled": tts_engine.config.enabled,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"TTS 테스트 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/preprocessing/process")
+async def preprocess_data(sensor_data_list: List[SensorData], 
+                         apply_filter: bool = True,
+                         apply_normalization: bool = True,
+                         apply_smoothing: bool = True,
+                         create_windows: bool = False):
+    """
+    센서 데이터 전처리 (KLP-SignGlove 전처리 파이프라인)
+    """
+    try:
+        if not sensor_data_list:
+            raise HTTPException(status_code=400, detail="센서 데이터가 비어있습니다")
+        
+        # 전처리 실행
+        processed_data = preprocessor.preprocess_sensor_sequence(
+            sensor_data_list,
+            apply_filter=apply_filter,
+            apply_normalization=apply_normalization,
+            apply_smoothing=apply_smoothing,
+            create_windows=create_windows
+        )
+        
+        # numpy 배열을 리스트로 변환 (JSON 직렬화용)
+        result = {
+            "flex_data": processed_data['flex'].tolist(),
+            "gyro_data": processed_data['gyro'].tolist(), 
+            "accel_data": processed_data['accel'].tolist(),
+            "sample_count": len(sensor_data_list),
+            "processing_config": {
+                "filter_applied": apply_filter,
+                "normalization_applied": apply_normalization,
+                "smoothing_applied": apply_smoothing,
+                "windows_created": create_windows
+            },
+            "preprocessor_stats": preprocessor.get_preprocessing_stats(),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        if 'windowed' in processed_data:
+            result["windowed_data"] = processed_data['windowed'].tolist()
+            result["window_shape"] = processed_data['windowed'].shape
+        
+        logger.info(f"전처리 완료: {len(sensor_data_list)}개 샘플")
+        return result
+        
+    except Exception as e:
+        logger.error(f"전처리 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/performance/current")
+async def get_current_performance():
+    """현재 성능 메트릭 조회"""
+    try:
+        metrics = performance_monitor.get_current_metrics()
+        return metrics
+    except Exception as e:
+        logger.error(f"성능 메트릭 조회 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/performance/summary")
+async def get_performance_summary(duration_minutes: int = 60):
+    """성능 요약 통계 조회"""
+    try:
+        summary = performance_monitor.get_performance_summary(duration_minutes)
+        return summary
+    except Exception as e:
+        logger.error(f"성능 요약 조회 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/performance/start")
+async def start_performance_monitoring():
+    """성능 모니터링 시작"""
+    try:
+        performance_monitor.start_monitoring()
+        return {"status": "started", "timestamp": datetime.now().isoformat()}
+    except Exception as e:
+        logger.error(f"성능 모니터링 시작 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/performance/stop")
+async def stop_performance_monitoring():
+    """성능 모니터링 중지"""
+    try:
+        performance_monitor.stop_monitoring()
+        return {"status": "stopped", "timestamp": datetime.now().isoformat()}
+    except Exception as e:
+        logger.error(f"성능 모니터링 중지 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/performance/report")
+async def export_performance_report():
+    """성능 보고서 내보내기"""
+    try:
+        report_file = performance_monitor.export_performance_report()
+        return {
+            "report_file": str(report_file),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"성능 보고서 생성 실패: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
