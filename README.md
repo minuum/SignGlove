@@ -110,6 +110,57 @@ poetry run donggeon-tcp-server  # 간단한 TCP 서버
 python scripts/demo.py
 ```
 
+
+## 🔗 외부 저장소(서브모듈)
+
+프로젝트는 두 개의 외부 저장소를 서브모듈로 관리합니다.
+
+- `external/KLP-SignGlove` (브랜치: `main`)
+- `external/SignGlove_HW` (브랜치: `main`)
+
+### 클론 방법
+
+```bash
+git clone --recurse-submodules <repository-url>
+cd SignGlove
+```
+
+이미 클론한 경우 서브모듈 초기화:
+
+```bash
+git submodule update --init --recursive
+```
+
+### 최신 상태로 동기화
+
+```bash
+git submodule update --remote --merge
+```
+
+### 특정 커밋으로 버전 고정(핀)
+
+```bash
+# 예: KLP-SignGlove를 특정 커밋으로 고정
+cd external/KLP-SignGlove
+git fetch origin
+git checkout <commit-or-tag>
+cd ../../
+git add external/KLP-SignGlove
+git commit -m "서브모듈: KLP-SignGlove 버전 고정(<commit>)"
+```
+
+### 운영 규칙
+
+- 서브모듈 코드는 직접 수정하지 않습니다. 변경이 필요하면 해당 저장소를 포크하여 PR을 올리거나, 우리 프로젝트 내부에 별도 어댑터/래퍼를 작성합니다.
+- 필요 시 로컬 실험용 수정은 별도 브랜치에서만 수행하고, 반드시 커밋으로 핀 고정하여 재현성을 유지합니다.
+- 통합 지점:
+  - 전처리: `server/preprocessing.py`
+  - 실시간 추론: `server/inference_engine.py`
+  - TTS: `server/tts_engine.py`
+  - CSV 수집: `scripts/csv_data_collector.py`
+
+자세한 정책은 `docs/external_repos.md`를 참고하세요.
+
 ## 📋 테스트 시나리오
 
 ### 1. 기본 연결성 테스트

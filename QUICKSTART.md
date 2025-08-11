@@ -52,6 +52,19 @@ poetry run start-server         # FastAPI 서버 시작
 ```
 브라우저에서 `http://localhost:8000`으로 API 문서 확인
 
+### 🔗 서브모듈 초기화 (외부 저장소 사용 시)
+
+```bash
+# 처음 클론하는 경우 (추천)
+git clone --recurse-submodules <repository-url>
+
+# 이미 클론했다면
+git submodule update --init --recursive
+
+# 최신 원격 반영
+git submodule update --remote --merge
+```
+
 ### 🤖 양동건 팀원 하드웨어 클라이언트
 ```bash
 # WiFi 방식 (Arduino Nano 33 IoT)
