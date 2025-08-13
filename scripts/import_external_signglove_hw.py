@@ -44,16 +44,25 @@ def detect_format(df: pd.DataFrame) -> str:
 
 
 def load_csv(input_file: Path) -> pd.DataFrame:
-    try:
-        df = pd.read_csv(input_file)
-        return df
-    except Exception:
-        # 헤더 없음 가정
+    """CSV 파일 로드 (인코딩 문제 대응)"""
+    encodings = ['utf-8', 'cp949', 'euc-kr', 'latin1']
+    
+    for encoding in encodings:
         try:
-            df = pd.read_csv(input_file, header=None)
+            # 헤더 있는 방식 시도
+            df = pd.read_csv(input_file, encoding=encoding)
             return df
-        except Exception as e:
-            raise RuntimeError(f"CSV 로드 실패: {input_file}: {e}")
+        except UnicodeDecodeError:
+            continue
+        except Exception:
+            try:
+                # 헤더 없는 방식 시도
+                df = pd.read_csv(input_file, header=None, encoding=encoding)
+                return df
+            except Exception:
+                continue
+    
+    raise RuntimeError(f"CSV 로드 실패: {input_file} (모든 인코딩 실패)")
 
 
 def convert_wifi_imu(df: pd.DataFrame, input_file: Path) -> pd.DataFrame:
