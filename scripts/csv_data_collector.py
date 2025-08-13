@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CSVSensorReading:
     """CSV 센서 데이터 구조"""
-    timestamp: float
+    timestamp: float  # epoch seconds
     flex_1: int
     flex_2: int
     flex_3: int
@@ -74,8 +74,14 @@ class CSVSensorReading:
     
     def to_csv_row(self) -> List:
         """CSV 행으로 변환"""
+        # 타임스탬프 포맷 확장: ISO8601, 밀리초
+        from datetime import datetime
+        ts_iso = datetime.fromtimestamp(self.timestamp).isoformat()
+        ts_ms = int(self.timestamp * 1000)
+
         return [
-            self.timestamp,
+            ts_iso,
+            ts_ms,
             self.flex_1, self.flex_2, self.flex_3, self.flex_4, self.flex_5,
             self.gyro_x, self.gyro_y, self.gyro_z,
             self.accel_x, self.accel_y, self.accel_z,
@@ -88,7 +94,8 @@ class CSVDataCollector:
     
     def __init__(self, 
                  output_dir: str = "data/csv_collections",
-                 buffer_size: int = 1000):
+                 buffer_size: int = 1000,
+                 device_id: str = "CSV_COLLECTOR_001"):
         """
         CSV 수집기 초기화
         
@@ -102,10 +109,11 @@ class CSVDataCollector:
         self.buffer_size = buffer_size
         self.data_buffer = queue.Queue(maxsize=buffer_size)
         self.is_collecting = False
+        self.device_id = device_id
         
         # CSV 헤더
         self.csv_header = [
-            'timestamp', 
+            'timestamp_iso', 'timestamp_ms',
             'flex_1', 'flex_2', 'flex_3', 'flex_4', 'flex_5',
             'gyro_x', 'gyro_y', 'gyro_z',
             'accel_x', 'accel_y', 'accel_z',
