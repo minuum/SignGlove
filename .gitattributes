@@ -1,0 +1,22 @@
+# Git LFS 설정 - 대용량 파일 관리
+*.h5 filter=lfs diff=lfs merge=lfs -text
+*.pth filter=lfs diff=lfs merge=lfs -text
+*.pkl filter=lfs diff=lfs merge=lfs -text
+*.csv filter=lfs diff=lfs merge=lfs -text
+*.json filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.pdf filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.tar.gz filter=lfs diff=lfs merge=lfs -text
+
+# 데이터셋 파일들
+data/**/*.csv filter=lfs diff=lfs merge=lfs -text
+data/**/*.h5 filter=lfs diff=lfs merge=lfs -text
+data/**/*.json filter=lfs diff=lfs merge=lfs -text
+
+# 외부 저장소의 대용량 파일들
+external/**/*.csv filter=lfs diff=lfs merge=lfs -text
+external/**/*.h5 filter=lfs diff=lfs merge=lfs -text
+external/**/*.png filter=lfs diff=lfs merge=lfs -text
