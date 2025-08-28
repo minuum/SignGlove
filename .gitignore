@@ -155,4 +155,4 @@ Thumbs.db
 # Arduino
 *.hex
 *.elf
-*.map
+*.mapexternal/
