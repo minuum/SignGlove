@@ -1,8 +1,0 @@
-[submodule "external/KLP-SignGlove"]
-	path = external/KLP-SignGlove
-	url = https://github.com/Kyle-Riss/KLP-SignGlove.git
-	branch = main
-[submodule "external/SignGlove_HW"]
-	path = external/SignGlove_HW
-	url = https://github.com/KNDG01001/SignGlove_HW.git
-	branch = main
