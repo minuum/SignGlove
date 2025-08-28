@@ -1,9 +1,0 @@
-{
-  "total_sensor_records": 100,
-  "total_gesture_records": 5,
-  "sessions": {},
-  "devices": [
-    "DUMMY_DEVICE_001"
-  ],
-  "last_update": "2025-07-15T14:31:20.378491"
-}

@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "signglove"
 version = "1.0.0"
-description = "수어 인식을 위한 스마트 글러브 시스템"
-authors = ["이민우 <minwoo@signglove.com>"]
+description = "SignGlove 통합 수어 인식 시스템 - 메인 레포지토리"
+authors = ["minuum <minuum@example.com>"]
 readme = "README.md"
-packages = [{include = "server"}]
+packages = [{include = "src"}]
 license = "MIT"
 
 [tool.poetry.dependencies]
@@ -14,6 +14,7 @@ uvicorn = {extras = ["standard"], version = "^0.24.0"}
 pydantic = "^2.5.0"
 pandas = "^2.1.4"
 numpy = "^1.25.2"
+python-json-logger = "^2.0.7"
 python-multipart = "^0.0.6"
 python-dotenv = "^1.0.0"
 loguru = "^0.7.2"
@@ -36,6 +37,8 @@ flake8 = "^6.1.0"
 mypy = "^1.7.1"
 pre-commit = "^3.5.0"
 pytest-cov = "^4.1.0"
+mkdocs = "^1.5.3"
+mkdocs-material = "^9.4.8"
 
 [tool.poetry.group.test.dependencies]
 pytest-mock = "^3.12.0"
@@ -47,7 +50,8 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-start-server = "server.main:start_server"
+signglove-api = "src.integration.api_gateway:app"
+start-api = "uvicorn src.integration.api_gateway:app --host 0.0.0.0 --port 8000 --reload"
 test-dummy = "tests.dummy_data_generator:main"
 donggeon-wifi = "hardware.donggeon.client.wifi_data_client:main"
 donggeon-uart = "hardware.donggeon.client.uart_data_client:main"
@@ -55,7 +59,7 @@ donggeon-tcp-server = "hardware.donggeon.server.simple_tcp_server:main"
 
 [tool.black]
 line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311']
+target-version = ['py39']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -73,12 +77,14 @@ extend-exclude = '''
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py"]
-addopts = "--cov=server --cov-report=html --cov-report=term-missing"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
 asyncio_mode = "auto"
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
