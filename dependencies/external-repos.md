@@ -20,6 +20,14 @@
 - **동기화 주기**: 매주 월요일
 - **마지막 업데이트**: 2024-08-28
 
+### 3. SignGlove-DataAnalysis
+- **저장소**: https://github.com/wodu2s/SignGlove-DataAnalysis
+- **소유자**: wodu2s
+- **설명**: 센서 데이터 분석 및 시각화 도구
+- **사용 목적**: 데이터 품질 분석 및 전처리 방법 참조
+- **동기화 주기**: 매주 월요일
+- **마지막 업데이트**: 2024-12-19
+
 ## 🔄 **동기화 방법**
 
 ### 자동 동기화 (권장)
@@ -28,16 +36,16 @@ GitHub Actions가 매주 자동으로 외부 저장소를 동기화합니다.
 ### 수동 동기화
 ```bash
 # KLP-SignGlove 업데이트
-cd external/KLP-SignGlove
-git clone https://github.com/Kyle-Riss/KLP-SignGlove.git temp
-cp -r temp/* .
-rm -rf temp
+cd collaborations/KLP-SignGlove
+git pull origin main
 
 # SignGlove_HW 업데이트
 cd ../SignGlove_HW
-git clone https://github.com/KNDG01001/SignGlove_HW.git temp
-cp -r temp/* .
-rm -rf temp
+git pull origin main
+
+# SignGlove-DataAnalysis 업데이트
+cd ../SignGlove-DataAnalysis
+git pull origin main
 ```
 
 ## 📋 **의존성 관리**
@@ -49,6 +57,7 @@ rm -rf temp
 ### 외부 저장소
 - 이 문서에서 버전 정보 관리
 - GitHub Actions로 자동 동기화
+- `collaborations/` 폴더에 저장
 
 ## 🚨 **주의사항**
 
@@ -62,3 +71,4 @@ rm -rf temp
 외부 저장소 관련 문의사항이 있으면 다음으로 연락하세요:
 - KLP-SignGlove: Kyle-Riss
 - SignGlove_HW: KNDG01001
+- SignGlove-DataAnalysis: wodu2s
