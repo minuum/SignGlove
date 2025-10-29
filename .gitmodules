@@ -1,0 +1,3 @@
+[submodule "external/SignGlove_HW"]
+	path = external/SignGlove_HW
+	url = https://github.com/KNDG01001/SignGlove_HW.git
