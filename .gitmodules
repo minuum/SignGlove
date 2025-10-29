@@ -1,3 +1,9 @@
 [submodule "external/SignGlove_HW"]
 	path = external/SignGlove_HW
 	url = https://github.com/KNDG01001/SignGlove_HW.git
+[submodule "external/KLP-SignGlove"]
+	path = external/KLP-SignGlove
+	url = https://github.com/Kyle-Riss/KLP-SignGlove.git
+[submodule "external/SignGlove-DataAnalysis"]
+	path = external/SignGlove-DataAnalysis
+	url = https://github.com/wodu2s/SignGlove-DataAnalysis.git
