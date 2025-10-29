@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "SignGlove 통합 수어 인식 시스템 - 메인 레포지토리"
 authors = ["minuum <minuum@example.com>"]
 readme = "README.md"
-packages = [{include = "src"}]
+packages = [{include = "signglove"}]
 license = "MIT"
 
 [tool.poetry.dependencies]
@@ -50,12 +50,9 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-signglove-api = "src.integration.api_gateway:app"
-start-api = "uvicorn src.integration.api_gateway:app --host 0.0.0.0 --port 8000 --reload"
+signglove-api = "signglove.integration.api_gateway:app"
+start-api = "uvicorn signglove.integration.api_gateway:app --host 0.0.0.0 --port 8000 --reload"
 test-dummy = "tests.dummy_data_generator:main"
-donggeon-wifi = "hardware.donggeon.client.wifi_data_client:main"
-donggeon-uart = "hardware.donggeon.client.uart_data_client:main"
-donggeon-tcp-server = "hardware.donggeon.server.simple_tcp_server:main"
 
 [tool.black]
 line-length = 88
